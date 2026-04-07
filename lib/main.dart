@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart'; // Import this
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Replace with your project credentials from Supabase Settings > API
+  // 1. Load the environment variables
+  await dotenv.load(fileName: ".env");
+
+  // 2. Initialize Supabase using the loaded keys
   await Supabase.initialize(
-    url: 'https://qwibhtwpwspxzejopbtn.supabase.co',
-    anonKey: 'sb_publishable_h-c5Pqa5hONQbhAy_3hjSQ_OfT46jTM',
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
   runApp(
@@ -18,7 +22,6 @@ void main() async {
   );
 }
 
-// THIS IS THE PART YOU WERE MISSING:
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -34,7 +37,7 @@ class MyApp extends StatelessWidget {
       home: const Scaffold(
         body: Center(
           child: Text(
-            'TaskHive: Ready to Build!',
+            'TaskHive: Secure & Ready!',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ),
