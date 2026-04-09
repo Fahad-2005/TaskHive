@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/auth/auth_screen.dart'; 
-import 'screens/home/dashboard_screen.dart';
+import 'screens/main_screen.dart'; // Import the new MainScreen instead of Dashboard directly
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -26,15 +27,19 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TaskHive',
-      // The StreamBuilder listens to Supabase Auth changes
+      debugShowCheckedModeBanner: false, // Cleaner look
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.amber, // Optional: Gives your app a "Hive" yellow theme
+      ),
       home: StreamBuilder<AuthState>(
         stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (context, snapshot) {
           final session = snapshot.data?.session;
 
           if (session != null) {
-            // User is logged in -> Show Dashboard
-            return const DashboardScreen();
+            // User is logged in -> Show the MainScreen shell (which contains the footer)
+            return const MainScreen(); 
           } else {
             // No user -> Show Login/Signup Screen
             return const AuthScreen();
