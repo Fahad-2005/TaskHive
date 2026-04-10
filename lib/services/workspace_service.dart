@@ -1,17 +1,17 @@
 import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/task_model.dart'; // Make sure this path is correct
+import '../models/task_model.dart'; 
 
 class WorkspaceService {
   final _supabase = Supabase.instance.client;
 
   // --- HELPER: Generate a random 6-character invite code ---
   String _generateInviteCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed 0, 1, O, I to avoid confusion
     return List.generate(6, (index) => chars[Random().nextInt(chars.length)]).join();
   }
 
-  // --- 1. CREATE: Create a new Hive and set user as Owner ---
+  // --- 1. CREATE WORKSPACE ---
   Future<void> createWorkspace(String name) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw 'User not authenticated';
@@ -31,38 +31,33 @@ class WorkspaceService {
     });
   }
 
-  // --- 2. JOIN: Join an existing Hive using an Invite Code ---
+  // --- 2. JOIN WORKSPACE ---
   Future<void> joinWorkspace(String inviteCode) async {
-  final user = _supabase.auth.currentUser;
-  if (user == null) throw 'User not authenticated';
-
-  // .trim() removes accidental spaces at start/end
-  // .toUpperCase() ensures 'abc123' matches 'ABC123'
-  final cleanCode = inviteCode.trim().toUpperCase();
-
-  // 1. Find the workspace
-  final workspaceData = await _supabase
-      .from('workspaces')
-      .select('id')
-      .eq('invite_code', cleanCode) 
-      .maybeSingle();
-
-  if (workspaceData == null) {
-    // This is where your error is currently triggering
-    throw 'Invalid Invite Code. Please check and try again.';
+  try {
+    // 1. Trim and uppercase to match database
+    final cleanCode = inviteCode.trim().toUpperCase();
+    
+    // 2. Call the RPC
+    await _supabase.rpc(
+      'join_hive_by_code',
+      params: {'hex_code': cleanCode},
+    );
+    
+    // 3. FORCE a refresh of the dashboard
+    // Note: We will do this in the UI after calling this method
+  } catch (e) {
+    print('Join Error: $e');
+    throw 'Invalid code or already a member';
   }
-
-  final String workspaceId = workspaceData['id'];
-
-  // 2. Add the member
-  await _supabase.from('workspace_members').upsert({
-    'workspace_id': workspaceId,
-    'user_id': user.id,
-    'role': 'member',
-  });
 }
 
-  // --- 3. FETCH TASKS: Get all tasks for a specific Hive ---
+  // --- 3. CREATE TASK ---
+  Future<void> createTask(Task task) async {
+    // We convert the Task model to a Map to send to Supabase
+    await _supabase.from('tasks').insert(task.toMap());
+  }
+
+  // --- 4. FETCH TASKS ---
   Future<List<Task>> getTasks(String workspaceId) async {
     final response = await _supabase
         .from('tasks')
@@ -71,5 +66,13 @@ class WorkspaceService {
         .order('created_at', ascending: false);
     
     return (response as List).map((task) => Task.fromMap(task)).toList();
+  }
+
+  // --- 5. UPDATE TASK STATUS (For Kanban Drag & Drop) ---
+  Future<void> updateTaskStatus(String taskId, String newStatus) async {
+    await _supabase
+        .from('tasks')
+        .update({'status': newStatus})
+        .eq('id', taskId);
   }
 }
