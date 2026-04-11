@@ -34,20 +34,28 @@ class WorkspaceService {
   // --- 2. JOIN WORKSPACE ---
   Future<void> joinWorkspace(String inviteCode) async {
   try {
-    // 1. Trim and uppercase to match database
     final cleanCode = inviteCode.trim().toUpperCase();
-    
-    // 2. Call the RPC
-    await _supabase.rpc(
+
+    // Call our fixed function
+    final response = await _supabase.rpc(
       'join_hive_by_code',
       params: {'hex_code': cleanCode},
     );
+
+    // The function returns a list because it's a 'RETURNS TABLE'
+    if (response != null && response is List && response.isNotEmpty) {
+      final result = response[0];
+      if (result['success'] == false) {
+        // This catches 'Invalid Invite Code'
+        throw result['message'];
+      }
+    }
     
-    // 3. FORCE a refresh of the dashboard
-    // Note: We will do this in the UI after calling this method
+    // Success! The database row is created.
   } catch (e) {
-    print('Join Error: $e');
-    throw 'Invalid code or already a member';
+    // If they are already a member, ON CONFLICT DO NOTHING happens, 
+    // but if you want to show a specific error, handle it here.
+    rethrow;
   }
 }
 
@@ -70,9 +78,16 @@ class WorkspaceService {
 
   // --- 5. UPDATE TASK STATUS (For Kanban Drag & Drop) ---
   Future<void> updateTaskStatus(String taskId, String newStatus) async {
-    await _supabase
+    final response = await _supabase
         .from('tasks')
         .update({'status': newStatus})
-        .eq('id', taskId);
+        .eq('id', taskId)
+        .select('id');
+
+    if (response is! List || (response as List).isEmpty) {
+      throw Exception(
+        'Could not update task status. No row was updated (check task id or RLS policies).',
+      );
+    }
   }
 }

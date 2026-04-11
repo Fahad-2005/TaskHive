@@ -35,15 +35,30 @@ final workspacesProvider = FutureProvider<List<Workspace>>((ref) async {
 final hiveMembersProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, workspaceId) async {
   final response = await Supabase.instance.client
       .from('workspace_members')
-      .select('user_id, profiles(username, id)') // This joins the profiles table
+      .select('''
+        user_id,
+        profiles (
+          username
+        )
+      ''') // No "!inner" here!
       .eq('workspace_id', workspaceId);
       
   return List<Map<String, dynamic>>.from(response);
 });
-
 // In workspace_provider.dart
 final hiveTasksProvider = FutureProvider.family<List<Task>, String>((ref, workspaceId) async {
-  return WorkspaceService().getTasks(workspaceId);
+  final response = await Supabase.instance.client
+      .from('tasks')
+      .select('''
+        *,
+        assignee:profiles!assigned_to(username)
+      ''')
+      .eq('workspace_id', workspaceId)
+      .order('created_at');
+
+  final List data = response as List;
+  // Change from .fromJson to .fromMap here:
+  return data.map((taskMap) => Task.fromMap(taskMap)).toList();
 });
 // This provider keeps track of which Workspace is currently selected
 final selectedWorkspaceProvider = StateProvider<Workspace?>((ref) => null);
