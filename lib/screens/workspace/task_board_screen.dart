@@ -6,6 +6,7 @@ import '../../models/task_model.dart';
 import '../../providers/workspace_provider.dart';
 import '../../services/workspace_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../chat/chat_screen.dart';
 
 class TaskBoardScreen extends ConsumerWidget {
   final Workspace workspace;
@@ -158,10 +159,46 @@ class TaskBoardScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            floatingActionButton: FloatingActionButton.extended(
-              onPressed: () => _showAddTaskDialog(context, ref),
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('New task'),
+           floatingActionButton: Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // 💬 HIVE CHAT (Secondary/Tertiary Style)
+                  // Using a smaller, distinct style to differentiate from task creation
+                  FloatingActionButton.small(
+                    heroTag: 'chat_fab', // Unique tag to prevent crashes
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (context) => ChatScreen(
+                            workspaceId: workspace.id,
+                            workspaceName: workspace.name,
+                          ),
+                        ),
+                      );
+                    },
+                    backgroundColor: colorScheme.tertiaryContainer,
+                    foregroundColor: colorScheme.onTertiaryContainer,
+                    child: const Icon(Icons.forum_rounded, size: 20),
+                  ),
+                  
+                  const SizedBox(height: 12),
+
+                  // ➕ NEW TASK (Primary Action)
+                  // This remains the main focus of the screen
+                  FloatingActionButton.extended(
+                    heroTag: 'task_board_new_task',
+                    onPressed: () => _showAddTaskDialog(context, ref),
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    icon: const Icon(Icons.add_task_rounded),
+                    label: const Text('New task'),
+                  ),
+                ],
+              ),
             ),
           ),
         );

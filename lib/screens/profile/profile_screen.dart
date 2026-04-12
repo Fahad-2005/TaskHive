@@ -145,32 +145,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Stack(
-                              alignment: Alignment.bottomRight,
-                              children: [
-                                CircleAvatar(
-                                  radius: 60,
-                                  backgroundColor: colorScheme.primaryContainer,
-                                  foregroundImage: profile.avatarUrl != null
-                                      ? NetworkImage(profile.avatarUrl!)
-                                      : null,
-                                  child: _isLoading
-                                      ? const CircularProgressIndicator()
-                                      : profile.avatarUrl == null
-                                          ? Icon(
-                                              Icons.person_rounded,
-                                              size: 58,
-                                              color:
-                                                  colorScheme.onPrimaryContainer,
-                                            )
+                            Center(
+                              child: SizedBox(
+                                width: 132,
+                                height: 132,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  alignment: Alignment.center,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 60,
+                                      backgroundColor:
+                                          colorScheme.primaryContainer,
+                                      foregroundImage: profile.avatarUrl != null
+                                          ? NetworkImage(profile.avatarUrl!)
                                           : null,
+                                      child: _isLoading
+                                          ? const CircularProgressIndicator()
+                                          : profile.avatarUrl == null
+                                              ? Icon(
+                                                  Icons.person_rounded,
+                                                  size: 58,
+                                                  color: colorScheme
+                                                      .onPrimaryContainer,
+                                                )
+                                              : null,
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      bottom: 0,
+                                      child: FloatingActionButton.small(
+                                        heroTag: 'edit_profile_avatar',
+                                        onPressed: _showPickerOptions,
+                                        child: const Icon(Icons.edit_rounded),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                FloatingActionButton.small(
-                                  heroTag: 'edit_profile_avatar',
-                                  onPressed: _showPickerOptions,
-                                  child: const Icon(Icons.edit_rounded),
-                                ),
-                              ],
+                              ),
                             ),
                             const SizedBox(height: 18),
                             Text(
