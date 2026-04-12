@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import '../../models/profile_model.dart';
 import 'privacy_policy_screen.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,46 +19,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isLoading = false;
 
   Future<void> _pickAndUploadImage(ImageSource source) async {
-    final picker = ImagePicker();
-    final image = await picker.pickImage(source: source, imageQuality: 50);
+  final picker = ImagePicker();
+  final image = await picker.pickImage(source: source, imageQuality: 50);
 
-    if (image == null) return;
+  if (image == null) return;
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
+  try {
+    final userId = _supabase.auth.currentUser!.id;
+    final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.png';
+    final path = '$userId/$fileName';
+
+    if (kIsWeb) {
+      // 🌐 WEB UPLOAD LOGIC
+      final bytes = await image.readAsBytes();
+      await _supabase.storage.from('profile_Avatar').uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
+    } else {
+      // 📱 MOBILE UPLOAD LOGIC
       final file = File(image.path);
-      final userId = _supabase.auth.currentUser!.id;
-      final path = '$userId/avatar.png';
-
-      // 1. Upload to Supabase Storage
-      await _supabase.storage
-          .from('avatars')
-          .upload(path, file, fileOptions: const FileOptions(upsert: true));
-
-      // 2. Get Public URL
-      final imageUrl = _supabase.storage.from('avatars').getPublicUrl(path);
-
-      // 3. Update Profiles Table
-      await _supabase
-          .from('profiles')
-          .update({'avatar_url': imageUrl})
-          .eq('id', userId);
-
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Avatar Updated!')));
-    } catch (e) {
-      if (mounted)
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      await _supabase.storage.from('profile_Avatar').upload(
+            path,
+            file,
+            fileOptions: const FileOptions(upsert: true),
+          );
     }
-  }
 
+    final imageUrl = _supabase.storage.from('profile_Avatar').getPublicUrl(path);
+
+    await _supabase.from('profiles').update({'avatar_url': imageUrl}).eq('id', userId);
+
+    if (mounted) setState(() {}); 
+  } catch (e) {
+    print("Upload Error: $e");
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
+  }
+}
   void _showPickerOptions() {
     showModalBottomSheet(
       context: context,

@@ -18,6 +18,7 @@ class DashboardScreen extends ConsumerWidget {
     // Watches the provider that filters by your real database memberships
     final workspacesAsync = ref.watch(workspacesProvider);
     final user = Supabase.instance.client.auth.currentUser;
+    
 
     return Scaffold(
       appBar: AppBar(
@@ -148,10 +149,25 @@ class DashboardScreen extends ConsumerWidget {
     return Row(
       children: [
         CircleAvatar(
-          radius: 25,
-          backgroundColor: color.primaryContainer,
-          child: Text(profile.username[0].toUpperCase()),
-        ),
+  radius: 28,
+  // Direct call to Theme.of(context) avoids the "undefined variable" error
+  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+  
+  foregroundImage: (profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty)
+      ? NetworkImage(profile.avatarUrl!)
+      : null,
+      
+  child: (profile.avatarUrl == null || profile.avatarUrl!.isEmpty)
+      ? Text(
+          profile.username[0].toUpperCase(),
+          style: TextStyle(
+            // Direct call here too
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
+            fontWeight: FontWeight.bold,
+          ),
+        )
+      : null,
+),
         const SizedBox(width: 15),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
