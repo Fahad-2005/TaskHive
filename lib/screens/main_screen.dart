@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home/dashboard_screen.dart';
 import 'profile/profile_screen.dart';
+import 'dashboard/focus_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,6 +14,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   final List<Widget> _screens = [
     const DashboardScreen(),
+    const FocusScreen(),
     const ProfileScreen(), // We will build this next
   ];
 
@@ -25,6 +27,7 @@ class _MainScreenState extends State<MainScreen> {
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
         destinations: const [
           NavigationDestination(icon: Icon(Icons.hive_rounded), label: 'Hives'),
+          NavigationDestination(icon: Icon(Icons.track_changes), label: 'Focus'),
           NavigationDestination(icon: Icon(Icons.person_rounded), label: 'Profile'),
         ],
       ),

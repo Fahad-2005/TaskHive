@@ -182,40 +182,108 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildWorkspaceCard(
-      BuildContext context, Workspace hive, ColorScheme color, WidgetRef ref, {bool isJoined = false}) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: color.outlineVariant),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-              color: isJoined ? color.tertiaryContainer : color.secondaryContainer,
-              borderRadius: BorderRadius.circular(12)),
-          child: Icon(
-            isJoined ? Icons.group_work_rounded : Icons.hive_rounded, 
-            color: isJoined ? color.onTertiaryContainer : color.onSecondaryContainer
-          ),
+    BuildContext context, Workspace hive, ColorScheme color, WidgetRef ref,
+    {bool isJoined = false}) {
+  return Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(color: color.outlineVariant),
+    ),
+    child: InkWell( // Using InkWell instead of ListTile's onTap for better control
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => TaskBoardScreen(workspace: hive)),
+        );
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Icon Container
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                      color: isJoined ? color.tertiaryContainer : color.secondaryContainer,
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Icon(
+                    isJoined ? Icons.group_work_rounded : Icons.hive_rounded,
+                    color: isJoined ? color.onTertiaryContainer : color.onSecondaryContainer,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Title and Status
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(hive.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(
+                        isJoined ? 'Member' : 'Invite Code: ${hive.inviteCode}',
+                        style: TextStyle(fontSize: 12, color: color.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+            const SizedBox(height: 16),
+            
+            // 📊 PROGRESS SECTION
+            FutureBuilder<double>(
+              future: WorkspaceService().getWorkspaceProgress(hive.id),
+              builder: (context, snapshot) {
+                final progress = snapshot.data ?? 0.0;
+                final bool isComplete = progress == 1.0 && snapshot.hasData;
+
+                return Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Progress",
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color.onSurfaceVariant),
+                        ),
+                        Text(
+                          "${(progress * 100).toInt()}%",
+                          style: TextStyle(
+                            fontSize: 11, 
+                            fontWeight: FontWeight.bold, 
+                            color: isComplete ? Colors.green : color.primary
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: color.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isComplete ? Colors.green : color.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
-        title: Text(hive.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: isJoined 
-          ? const Text('Member') 
-          : Text('Invite Code: ${hive.inviteCode}'),
-        trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => TaskBoardScreen(workspace: hive)),
-          );
-        },
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildEmptyState(BuildContext context, ColorScheme color) {
     return Center(

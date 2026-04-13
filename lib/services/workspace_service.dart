@@ -90,4 +90,28 @@ class WorkspaceService {
       );
     }
   }
+
+  Future<List<Task>> getMyPersonalTasks(String userId) async {
+  final response = await _supabase
+      .from('tasks')
+      .select()
+      .eq('assigned_to', userId)
+      .order('deadline', ascending: true);
+
+  return (response as List).map((t) => Task.fromMap(t)).toList();
+}
+
+Future<double> getWorkspaceProgress(String workspaceId) async {
+  final response = await _supabase
+      .from('tasks')
+      .select('status')
+      .eq('workspace_id', workspaceId);
+
+  final List tasks = response as List;
+  if (tasks.isEmpty) return 0.0;
+
+  final doneTasks = tasks.where((t) => t['status'] == 'done').length;
+  return doneTasks / tasks.length;
+}
+
 }
