@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/task_model.dart';
 import '../../services/workspace_service.dart';
 import 'package:intl/intl.dart';
+import '../chat/chat_screen.dart';
 
 class FocusScreen extends ConsumerWidget {
   const FocusScreen({super.key});
@@ -44,36 +45,125 @@ class FocusScreen extends ConsumerWidget {
               });
 
               return CustomScrollView(
-                slivers: [
-                  // 1. STYLISH HEADER
-                  SliverToBoxAdapter(
-                    child: _buildEnhancedHeader(context, allTasks.length, doneTasksCount),
-                  ),
+  slivers: [
+    // 1. STYLISH HEADER
+    SliverToBoxAdapter(
+      child: _buildEnhancedHeader(context, allTasks.length, doneTasksCount),
+    ),
 
-                  // 2. TASK LIST
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: pendingTasks.isEmpty
-                        ? const SliverFillRemaining(
-                            hasScrollBody: false,
-                            child: Center(child: Text("All tasks cleared! 🎯")),
-                          )
-                        : SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) => _EnhancedTaskTile(task: pendingTasks[index]),
-                              childCount: pendingTasks.length,
-                            ),
-                          ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
-                ],
-              );
+    // 2. TASK LIST SECTION HEADER
+    const SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 8, 24, 16),
+        child: Text(
+          "My Assignments",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+      ),
+    ),
+
+    // 3. THE TASK TILES
+    SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      sliver: pendingTasks.isEmpty
+          ? const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: Text("All tasks cleared! 🎯"),
+                ),
+              ),
+            )
+          : SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, index) => _EnhancedTaskTile(task: pendingTasks[index]),
+                childCount: pendingTasks.length,
+              ),
+            ),
+    ),
+
+    // 🚀 4. THE LIVE ACTIVITY FEED (The Missing Part!)
+    SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: _buildActivityFeed(user.id), // We call your function here
+      ),
+    ),
+
+    const SliverToBoxAdapter(child: SizedBox(height: 100)),
+  ],
+);
             },
           ),
         ),
       ),
     );
   }
+  Widget _buildActivityFeed(String workspaceId) {
+  final client = Supabase.instance.client;
+
+  return StreamBuilder<List<Map<String, dynamic>>>(
+    stream: client
+    .from('activities')
+    .stream(primaryKey: ['id']) // 👈 This is the "hook" that listens for changes
+    .order('created_at', ascending: false)
+    .limit(10),// Only show last 10 actions
+    builder: (context, snapshot) {
+      if (!snapshot.hasData) return const SizedBox();
+
+      final activities = snapshot.data!;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Text("Latest Activity", 
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: activities.length,
+            itemBuilder: (context, index) {
+              final act = activities[index];
+              return ListTile(
+  leading: ChatAvatar(userId: act['user_id']),
+  title: FutureBuilder(
+    // Fetch the username for the activity text
+    future: Supabase.instance.client.from('profiles').select('username').eq('id', act['user_id']).single(),
+    builder: (context, snapshot) {
+      final username = snapshot.data?['username'] ?? 'Someone';
+      return RichText(
+        text: TextSpan(
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 13),
+          children: [
+            TextSpan(text: username, style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: " ${act['action_text']} "),
+            TextSpan(
+              text: act['target_name'],
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  ),
+  subtitle: Text(
+    DateFormat('hh:mm a').format(DateTime.parse(act['created_at']).toLocal()),
+    style: const TextStyle(fontSize: 10),
+  ),
+);
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 
   Widget _buildEnhancedHeader(BuildContext context, int total, int done) {
     final colorScheme = Theme.of(context).colorScheme;

@@ -127,7 +127,7 @@ class _MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isMe) ...[
-            _ChatAvatar(userId: userId),
+            ChatAvatar(userId: userId),
             const SizedBox(width: 8),
           ],
           Flexible(
@@ -187,7 +187,7 @@ class _MessageBubble extends StatelessWidget {
           ),
           if (isMe) ...[
             const SizedBox(width: 8),
-            _ChatAvatar(userId: userId),
+            ChatAvatar(userId: userId),
           ],
         ],
       ),
@@ -195,9 +195,9 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
-class _ChatAvatar extends StatelessWidget {
+class ChatAvatar extends StatelessWidget {
   final String userId;
-  const _ChatAvatar({required this.userId});
+  const ChatAvatar({required this.userId});
 
   @override
   Widget build(BuildContext context) {

@@ -61,8 +61,9 @@ class WorkspaceService {
 
   // --- 3. CREATE TASK ---
   Future<void> createTask(Task task) async {
-    // We convert the Task model to a Map to send to Supabase
     await _supabase.from('tasks').insert(task.toMap());
+await _logActivity(task.workspaceId, "created task", task.title);
+    // We convert the Task model to a Map to send to Supabase
   }
 
   // --- 4. FETCH TASKS ---
@@ -78,18 +79,36 @@ class WorkspaceService {
 
   // --- 5. UPDATE TASK STATUS (For Kanban Drag & Drop) ---
   Future<void> updateTaskStatus(String taskId, String newStatus) async {
-    final response = await _supabase
+  try {
+    // 1. Fetch task details first to get the Title and Workspace ID for the log
+    final taskData = await _supabase
+        .from('tasks')
+        .select('title, workspace_id')
+        .eq('id', taskId)
+        .single();
+
+    final String taskTitle = taskData['title'];
+    final String workspaceId = taskData['workspace_id'];
+
+    // 2. Perform the update
+    await _supabase
         .from('tasks')
         .update({'status': newStatus})
-        .eq('id', taskId)
-        .select('id');
+        .eq('id', taskId);
 
-    if (response is! List || (response as List).isEmpty) {
-      throw Exception(
-        'Could not update task status. No row was updated (check task id or RLS policies).',
-      );
-    }
+    // 3. Log the activity using the data we just fetched
+    await _logActivity(workspaceId, "moved to ${_statusLabel(newStatus)}", taskTitle);
+
+  } catch (e) {
+    throw Exception('Could not update task status: $e');
   }
+}
+
+// Helper to make the status look nice in the activity feed (To Do instead of todo)
+String _statusLabel(String status) {
+  return status.replaceAll('_', ' ').split(' ').map((str) => 
+    str[0].toUpperCase() + str.substring(1)).join(' ');
+}
 
   Future<List<Task>> getMyPersonalTasks(String userId) async {
   final response = await _supabase
@@ -112,6 +131,16 @@ Future<double> getWorkspaceProgress(String workspaceId) async {
 
   final doneTasks = tasks.where((t) => t['status'] == 'done').length;
   return doneTasks / tasks.length;
+}
+
+Future<void> _logActivity(String workspaceId, String action, String target) async {
+  final userId = _supabase.auth.currentUser!.id;
+  await _supabase.from('activities').insert({
+    'workspace_id': workspaceId,
+    'user_id': userId,
+    'action_text': action,
+    'target_name': target,
+  });
 }
 
 }
