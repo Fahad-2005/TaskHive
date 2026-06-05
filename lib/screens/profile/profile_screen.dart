@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../providers/theme_provider.dart';
+import '../../theme/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../models/profile_model.dart';
 import 'privacy_policy_screen.dart';
@@ -95,18 +98,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: AppColors.pageBackground(context),
       appBar: AppBar(title: const Text('Profile')),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colorScheme.primary.withValues(alpha: 0.08),
-              colorScheme.surface,
-            ],
-          ),
-        ),
+        decoration: AppColors.pageDecoration(context),
         child: FutureBuilder(
           future: _supabase.from('profiles').select().eq('id', user!.id).single(),
           builder: (context, snapshot) {
@@ -217,6 +212,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
+                            _AppearanceSettings(colorScheme: colorScheme),
+                            const SizedBox(height: 16),
                             OutlinedButton.icon(
                               onPressed: () {
                                 Navigator.of(context).push(
@@ -247,6 +244,74 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _AppearanceSettings extends ConsumerWidget {
+  final ColorScheme colorScheme;
+
+  const _AppearanceSettings({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.palette_outlined, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Appearance',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Choose how TaskHive looks on your device.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 14),
+          SegmentedButton<ThemeMode>(
+            segments: const [
+              ButtonSegment(
+                value: ThemeMode.light,
+                icon: Icon(Icons.light_mode_rounded, size: 18),
+                label: Text('Light'),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                icon: Icon(Icons.dark_mode_rounded, size: 18),
+                label: Text('Dark'),
+              ),
+              ButtonSegment(
+                value: ThemeMode.system,
+                icon: Icon(Icons.brightness_auto_rounded, size: 18),
+                label: Text('System'),
+              ),
+            ],
+            selected: {themeMode},
+            onSelectionChanged: (selected) {
+              ref.read(themeModeProvider.notifier).setThemeMode(selected.first);
+            },
+          ),
+        ],
       ),
     );
   }

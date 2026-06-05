@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../theme/app_colors.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -53,18 +54,9 @@ class _AuthScreenState extends State<AuthScreen> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: AppColors.pageBackground(context),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colorScheme.primary.withValues(alpha: 0.08),
-              colorScheme.surface,
-              colorScheme.surface,
-            ],
-          ),
-        ),
+        decoration: AppColors.pageDecoration(context),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -72,19 +64,30 @@ class _AuthScreenState extends State<AuthScreen> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Card(
-                  elevation: 4,
+                  elevation: 0,
+                  color: AppColors.cardBackground(context),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(20),
+                    side: BorderSide(color: AppColors.cardBorder(context)),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Icon(
-                          Icons.hive_rounded,
-                          size: 40,
-                          color: colorScheme.primary,
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppColors.hiveAccent.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.hive_rounded,
+                              size: 36,
+                              color: AppColors.hiveAccent,
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 12),
                         Text(

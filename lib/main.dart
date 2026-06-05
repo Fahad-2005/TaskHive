@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/auth/auth_screen.dart'; 
-import 'screens/main_screen.dart'; // Import the new MainScreen instead of Dashboard directly
+import 'providers/theme_provider.dart';
+import 'screens/auth/auth_screen.dart';
+import 'screens/main_screen.dart';
+import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Load the environment variables
   await dotenv.load(fileName: ".env");
 
-  // 2. Initialize Supabase using the loaded keys
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL'] ?? '',
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
@@ -20,28 +20,27 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
       title: 'TaskHive',
-      debugShowCheckedModeBanner: false, // Cleaner look
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.amber, // Optional: Gives your app a "Hive" yellow theme
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeMode,
       home: StreamBuilder<AuthState>(
         stream: Supabase.instance.client.auth.onAuthStateChange,
         builder: (context, snapshot) {
           final session = snapshot.data?.session;
 
           if (session != null) {
-            // User is logged in -> Show the MainScreen shell (which contains the footer)
-            return const MainScreen(); 
+            return const MainScreen();
           } else {
-            // No user -> Show Login/Signup Screen
             return const AuthScreen();
           }
         },

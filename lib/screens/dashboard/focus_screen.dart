@@ -5,6 +5,7 @@ import '../../models/task_model.dart';
 import '../../services/workspace_service.dart';
 import 'package:intl/intl.dart';
 import '../chat/chat_screen.dart';
+import '../../theme/app_colors.dart';
 
 class FocusScreen extends ConsumerWidget {
   const FocusScreen({super.key});
@@ -12,20 +13,11 @@ class FocusScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = Supabase.instance.client.auth.currentUser;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
+      backgroundColor: AppColors.pageBackground(context),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primaryContainer.withOpacity(0.4),
-              colorScheme.surface,
-            ],
-          ),
-        ),
+        decoration: AppColors.pageDecoration(context),
         child: SafeArea(
           child: FutureBuilder<List<Task>>(
             future: WorkspaceService().getMyPersonalTasks(user!.id),
